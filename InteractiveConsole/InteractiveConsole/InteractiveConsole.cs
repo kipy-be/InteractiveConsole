@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace InteractiveConsole
 {
@@ -43,6 +44,7 @@ namespace InteractiveConsole
                         AddChar(key.KeyChar);
                         break;
                     case ConsoleKey.Tab:
+                        AutoComplete();
                         break;
                     case ConsoleKey.Enter:
                         Validate();
@@ -64,7 +66,7 @@ namespace InteractiveConsole
                         break;
                 }
 
-                Console.CursorVisible = false;
+                SetCursorVisible(false);
 
                 if (_print)
                 {
@@ -76,9 +78,17 @@ namespace InteractiveConsole
                     Console.SetCursorPosition(_cursorPosition + _promptLength, Console.CursorTop);
                 }
 
-                Console.CursorVisible = true;
+                SetCursorVisible(true);
 
             } while (!_exit);
+        }
+
+        private void SetCursorVisible(bool visible)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Console.CursorVisible = visible;
+            }
         }
 
         private void AddChar(char c)
@@ -132,6 +142,15 @@ namespace InteractiveConsole
             }
 
             ++_cursorPosition;
+            _setCursor = true;
+        }
+
+        private void AutoComplete()
+        {
+            string str = " insert ";
+            _input = _input.Insert(_cursorPosition, str);
+            _cursorPosition += str.Length;
+            _print = true;
             _setCursor = true;
         }
 
