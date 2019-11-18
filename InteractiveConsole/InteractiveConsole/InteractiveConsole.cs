@@ -1,14 +1,22 @@
 ﻿using System;
 
-namespace TestAutoCompletion
+namespace InteractiveConsole
 {
     public class InteractiveConsole
     {
+        private string _promptName;
+        private int _promptLength;
         private bool _exit = false;
         private string _input;
         private int _cursorPosition;
         private bool _print;
         private bool _setCursor;
+
+        public InteractiveConsole(string promptName)
+        {
+            _promptName = promptName;
+            _promptLength = _promptName.Length + 3;
+        }
 
         public void Process()
         {
@@ -16,6 +24,8 @@ namespace TestAutoCompletion
 
             _input = string.Empty;
             _cursorPosition = 0;
+
+            WritePrompt();
 
             do
             {
@@ -52,12 +62,12 @@ namespace TestAutoCompletion
 
                 if (_print)
                 {
-                    WriteCurrentLine(_input);
+                    WriteCurrentLine();
                 }
 
                 if (_setCursor)
                 {
-                    Console.SetCursorPosition(_cursorPosition, Console.CursorTop);
+                    Console.SetCursorPosition(_cursorPosition + _promptLength, Console.CursorTop);
                 }
 
             } while (!_exit);
@@ -117,22 +127,26 @@ namespace TestAutoCompletion
             _setCursor = true;
         }
 
-        private void WriteCurrentLine(string line, params object[] args)
+        private void WritePrompt()
         {
-            if (args.Length > 0)
-            {
-                line = string.Format(line, args);
-            }
-            
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.Write("@{0}> ", _promptName);
+            Console.ResetColor();
+        }
+
+        private void WriteCurrentLine()
+        {
             Console.Write("\r");
-            Console.Write(line);
-            Console.Write(new string(' ', Console.BufferWidth - line.Length));
+            WritePrompt();
+            Console.Write(_input);
+            Console.Write(new string(' ', Console.BufferWidth - _promptLength - _input.Length));
         }
 
         private void ValidateLine()
         {
-            WriteCurrentLine(_input);
+            WriteCurrentLine();
             Console.WriteLine();
+            WritePrompt();
             _input = string.Empty;
             _cursorPosition = 0;
             _setCursor = true;

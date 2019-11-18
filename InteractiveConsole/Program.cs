@@ -2,13 +2,13 @@
 using System.Diagnostics;
 using System.Threading;
 
-namespace TestAutoCompletion
+namespace InteractiveConsole
 {
     class Program
     {
         static void Main(string[] args)
         {
-            var console = new InteractiveConsole();
+            var console = new InteractiveConsole("prompt");
             console.Process();
         }
     }
