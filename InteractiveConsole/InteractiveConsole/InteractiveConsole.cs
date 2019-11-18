@@ -6,10 +6,13 @@ namespace InteractiveConsole
     {
         private string _promptName;
         private int _promptLength;
+
         private bool _exit = false;
+
         private string _input;
         private int _cursorPosition;
         private bool _print;
+        private bool _validate;
         private bool _setCursor;
 
         public InteractiveConsole(string promptName)
@@ -30,6 +33,7 @@ namespace InteractiveConsole
             do
             {
                 key = Console.ReadKey(true);
+                _validate = false;
                 _print = false;
                 _setCursor = false;
 
@@ -41,7 +45,7 @@ namespace InteractiveConsole
                     case ConsoleKey.Tab:
                         break;
                     case ConsoleKey.Enter:
-                        ValidateLine();
+                        Validate();
                         break;
                     case ConsoleKey.Delete:
                         DeleteNextChar();
@@ -60,15 +64,19 @@ namespace InteractiveConsole
                         break;
                 }
 
+                Console.CursorVisible = false;
+
                 if (_print)
                 {
-                    WriteCurrentLine();
+                    WriteCurrentLine(_validate);
                 }
 
                 if (_setCursor)
                 {
                     Console.SetCursorPosition(_cursorPosition + _promptLength, Console.CursorTop);
                 }
+
+                Console.CursorVisible = true;
 
             } while (!_exit);
         }
@@ -127,6 +135,12 @@ namespace InteractiveConsole
             _setCursor = true;
         }
 
+        private void Validate()
+        {
+            _print = true;
+            _validate = true;
+        }
+
         private void WritePrompt()
         {
             Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -134,22 +148,21 @@ namespace InteractiveConsole
             Console.ResetColor();
         }
 
-        private void WriteCurrentLine()
+        private void WriteCurrentLine(bool validate)
         {
             Console.Write("\r");
             WritePrompt();
             Console.Write(_input);
             Console.Write(new string(' ', Console.BufferWidth - _promptLength - _input.Length));
-        }
 
-        private void ValidateLine()
-        {
-            WriteCurrentLine();
-            Console.WriteLine();
-            WritePrompt();
-            _input = string.Empty;
-            _cursorPosition = 0;
-            _setCursor = true;
+            if(validate)
+            {
+                Console.WriteLine();
+                WritePrompt();
+                _input = string.Empty;
+                _cursorPosition = 0;
+                _setCursor = true;
+            }
         }
     }
 }
