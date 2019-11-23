@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -31,8 +30,10 @@ namespace InteractiveConsole
         private bool _exit = false;
 
         private string _input;
+        private string _info;
         private int _cursorPosition;
         private bool _print;
+        private bool _printInfo;
         private bool _validate;
         private bool _setCursor;
 
@@ -65,6 +66,7 @@ namespace InteractiveConsole
 
                 _validate = false;
                 _print = false;
+                _printInfo = false;
                 _setCursor = false;
 
                 switch (key.Key)
@@ -200,7 +202,7 @@ namespace InteractiveConsole
             return new InputToken(sb.ToString(), i + 1);
         }
 
-        private List<string> GetPathSuggestions(string dir, string token)
+        private string[] GetPathSuggestions(string dir, string token)
         {
             int i = 0;
             var suggestions = new List<string>();
@@ -209,16 +211,16 @@ namespace InteractiveConsole
             {
                 suggestions.Add(Path.GetFileName(file));
                 
-                if (++i >= MAX_SUGGESTIONS)
+                if (++i > MAX_SUGGESTIONS)
                 {
                     break;
                 }
             }
 
-            return suggestions;
+            return suggestions.ToArray();
         }
 
-        private string GetCommonFromSuggestions(List<string> suggestions)
+        private string GetCommonFromSuggestions(string[] suggestions)
         {
             char c;
             int i;
@@ -234,7 +236,7 @@ namespace InteractiveConsole
 
                 c = suggestions[0][u];
 
-                for (i = 1; i < suggestions.Count; i++)
+                for (i = 1; i < suggestions.Length; i++)
                 {
                     if(u >= suggestions[i].Length || c != suggestions[i][u])
                     {
@@ -249,7 +251,17 @@ namespace InteractiveConsole
 
         private void ReplaceToken(InputToken token, string oldValue, string newValue)
         {
-            int index = token.StartIndex + token.Token.LastIndexOf(oldValue);
+            int index = token.StartIndex;
+
+            if (!string.IsNullOrEmpty(oldValue))
+            {
+                index += token.Token.LastIndexOf(oldValue);
+            }
+            else
+            {
+                index += token.Token.Length;
+            }
+            
             int count = token.StartIndex + token.Length - index;
 
             _input = _input.Remove(index, count);
@@ -262,6 +274,29 @@ namespace InteractiveConsole
             _setCursor = true;
         }
 
+        private string GetPathEnd(string path)
+        {
+            var sb = new StringBuilder();
+
+            for (int i = path.Length - 1; i >= 0; i--)
+            {
+                if (_input[i] == '/' || _input[i] == '\\')
+                {
+                    break;
+                }
+
+                sb.Insert(0, _input[i]);
+            }
+
+            string res = sb.ToString();
+            if (res.Length > 0 && !char.IsLetterOrDigit(res[res.Length - 1]))
+            {
+                return null;
+            }
+
+            return res;
+        }
+
         private void AutoComplete()
         {
             var inputToken = GetCurrentToken();
@@ -271,29 +306,53 @@ namespace InteractiveConsole
                 return;
             }
 
-            string dir = Path.Combine(_currentDirectory, new FileInfo(inputToken.Token).DirectoryName);
-            string token = Path.GetFileName(inputToken.Token);
+            string dir = new FileInfo(inputToken.Token).DirectoryName;
 
-            var suggestions = GetPathSuggestions(dir, token);
-            if (suggestions.Count == 0)
+            if (dir == null)
+            {
+                dir = new DirectoryInfo(inputToken.Token).FullName;
+            }
+
+            dir = Path.Combine(_currentDirectory, dir);
+            string pathEnd = GetPathEnd(inputToken.Token);
+
+            if (pathEnd == null)
             {
                 return;
             }
 
-            if (suggestions.Count == 1)
+            var suggestions = GetPathSuggestions(dir, pathEnd);
+            if (suggestions.Length == 0)
             {
-                ReplaceToken(inputToken, token, suggestions[0]);
+                return;
+            }
+
+            if (suggestions.Length == 1)
+            {
+                ReplaceToken(inputToken, pathEnd, suggestions[0]);
                 return;
             }
 
             string common = GetCommonFromSuggestions(suggestions);
-            if(common != token)
+            if(common != pathEnd)
             {
-                ReplaceToken(inputToken, token, common);
+                ReplaceToken(inputToken, pathEnd, common);
                 return;
             }
 
-            Debug.WriteLine(string.Join(", ", suggestions));
+            if(suggestions.Length > MAX_SUGGESTIONS)
+            {
+                _info = $"{string.Join("  ", suggestions, 0, MAX_SUGGESTIONS)}  (...)";
+            }
+            else
+            {
+                _info = $"{string.Join("  ", suggestions)}";
+            }
+
+            
+            _print = true;
+            _printInfo = true;
+            _setCursor = true;
         }
 
         private void Validate()
@@ -316,7 +375,19 @@ namespace InteractiveConsole
             Console.Write(_input);
             Console.Write(new string(' ', Console.BufferWidth - _promptLength - _input.Length));
 
-            if(validate)
+            if (_printInfo)
+            {
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine(_info);
+                Console.ResetColor();
+                Console.WriteLine();
+                _printInfo = false;
+                WriteCurrentLine(validate);
+                return;
+            }
+
+            if (validate)
             {
                 Console.WriteLine();
                 WritePrompt();
