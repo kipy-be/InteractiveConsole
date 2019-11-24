@@ -374,7 +374,7 @@ namespace Terminal
 
             for (int i = path.Length - 1; i >= 0; i--)
             {
-                if (_input[i] == '/' || _input[i] == '\\')
+                if (path[i] == '/' || path[i] == '\\')
                 {
                     break;
                 }
