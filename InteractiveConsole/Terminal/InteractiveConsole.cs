@@ -25,7 +25,8 @@ namespace Terminal
         private bool _exit = false;
         private bool _forceExit = false;
 
-        private Dictionary<string, ConsoleTask> _tasks;
+        private List<ConsoleTask> _tasks = new List<ConsoleTask>();
+        private Dictionary<string, ConsoleTask> _tasksByCommand = new Dictionary<string, ConsoleTask>();
         private ConsoleTask _currentTask;
 
         private ConsoleKeyInfo _key;
@@ -50,8 +51,6 @@ namespace Terminal
             _promptName = promptName;
             _promptLength = _promptName.Length + 3;
 
-            _tasks = new Dictionary<string, ConsoleTask>();
-
             if (addDefaultTasks)
             {
                 AddDefaultsTasks();
@@ -64,26 +63,34 @@ namespace Terminal
             AddTask<GetCurrentDirectoryTask>();
             AddTask<ChangeDirectoryTask>();
             AddTask<ListDirectoryTask>();
+
+            AddTask(new HelpTask(_tasks, _tasksByCommand));
         }
 
         public void AddTask<T>()
             where T : ConsoleTask, new()
         {
-            T task = new T();
+            AddTask(new T());
+        }
 
-            if (_tasks.ContainsKey(task.Command))
+        public void AddTask(ConsoleTask task)
+        {
+            if (_tasksByCommand.ContainsKey(task.Command))
             {
                 throw new TerminalTaskDuplicatedCommandException();
             }
-            _tasks.Add(task.Command.ToLower(), task);
 
-            foreach(var alias in task.Aliases)
+            _tasks.Add(task);
+            _tasksByCommand.Add(task.Command.ToLower(), task);
+
+            foreach (var alias in task.Aliases)
             {
-                if (_tasks.ContainsKey(alias))
+                if (_tasksByCommand.ContainsKey(alias))
                 {
                     throw new TerminalTaskDuplicatedCommandException();
                 }
-                _tasks.Add(alias.ToLower(), task);
+
+                _tasksByCommand.Add(alias.ToLower(), task);
             }
         }
 
@@ -519,6 +526,7 @@ namespace Terminal
             if (_printInfo)
             {
                 Console.WriteLine();
+                Console.Write("> ");
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.WriteLine(_info);
                 Console.ResetColor();
@@ -556,7 +564,7 @@ namespace Terminal
                     return;
                 }
 
-                if (!_tasks.TryGetValue(cmd.Action.ToLower(), out task))
+                if (!_tasksByCommand.TryGetValue(cmd.Action.ToLower(), out task))
                 {
                     Console.WriteLine("> Unknown command");
                     return;

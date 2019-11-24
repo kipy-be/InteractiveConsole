@@ -2,12 +2,13 @@
 {
     internal class ExitTask : ConsoleTask
     {
-        public override string Name => "Exit";
-        public override string Command => "exit";
-        public override string[] Aliases => new string[] { "quit" };
         public override bool IsExit => true;
 
-        public override void Exec()
-        {}
+        public ExitTask()
+        {
+            SetName("Exit");
+            SetCommand("exit", "quit");
+            SetDescription("exit the application and stop all its running processes");
+        }
     }
 }

@@ -4,10 +4,14 @@ namespace Terminal.Tasks.Defaults
 {
     internal class ChangeDirectoryTask : ConsoleTask
     {
-        public override string Name => "Change current dir";
-        public override string Command => "cd";
-
         private string _directory;
+
+        public ChangeDirectoryTask()
+        {
+            SetName("Change current dir");
+            SetCommand("cd");
+            SetDescription("change the current directory");
+        }
 
         public override void Parse(string[] args)
         {

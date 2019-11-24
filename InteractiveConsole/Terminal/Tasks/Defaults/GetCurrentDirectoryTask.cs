@@ -5,8 +5,12 @@ namespace Terminal.Tasks.Defaults
 {
     internal class GetCurrentDirectoryTask : ConsoleTask
     {
-        public override string Name => "Get current dir";
-        public override string Command => "pwd";
+        public GetCurrentDirectoryTask()
+        {
+            SetName("Get current dir");
+            SetCommand("pwd");
+            SetDescription("display the current directory");
+        }
 
         public override void Exec()
         {

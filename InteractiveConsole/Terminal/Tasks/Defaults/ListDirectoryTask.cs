@@ -6,11 +6,14 @@ namespace Terminal.Tasks.Defaults
 {
     internal class ListDirectoryTask : ConsoleTask
     {
-        public override string Name => "List current dir";
-        public override string Command => "list";
-        public override string[] Aliases => new string[] { "ls" };
-
         private string _directory;
+
+        public ListDirectoryTask()
+        {
+            SetName("List current dir");
+            SetCommand("list", "ls");
+            SetDescription("display the content of the current directory");
+        }
 
         public override void Parse(string[] args)
         {
