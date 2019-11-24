@@ -285,11 +285,6 @@ namespace Terminal
             foreach(string file in Directory.EnumerateFileSystemEntries(dir, $"{token}*", _enumerationOptions))
             {
                 suggestions.Add(Path.GetFileName(file));
-                
-                if (++i > MAX_SUGGESTIONS)
-                {
-                    break;
-                }
             }
 
             return suggestions.ToArray();
@@ -428,15 +423,15 @@ namespace Terminal
             }
 
             string common = GetCommonFromSuggestions(suggestions);
-            if(common != pathEnd)
+            if (!string.IsNullOrEmpty(common) && common != pathEnd)
             {
                 ReplaceToken(inputToken, pathEnd, common);
                 return;
             }
 
-            if(suggestions.Length > MAX_SUGGESTIONS)
+            if (suggestions.Length > MAX_SUGGESTIONS)
             {
-                _info = $"{string.Join("  ", suggestions, 0, MAX_SUGGESTIONS)}  (...)";
+                _info = $"{string.Join("  ", suggestions, 0, MAX_SUGGESTIONS)}\n({(suggestions.Length - MAX_SUGGESTIONS)} more...)";
             }
             else
             {
