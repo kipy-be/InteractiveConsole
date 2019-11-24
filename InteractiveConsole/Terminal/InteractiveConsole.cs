@@ -45,13 +45,17 @@ namespace Terminal
 
         public event EventHandler OnExit;
 
-        public InteractiveConsole(string promptName)
+        public InteractiveConsole(string promptName, bool addDefaultTasks = true)
         {
             _promptName = promptName;
             _promptLength = _promptName.Length + 3;
 
             _tasks = new Dictionary<string, ConsoleTask>();
-            AddDefaultsTasks();
+
+            if (addDefaultTasks)
+            {
+                AddDefaultsTasks();
+            }
         }
 
         private void AddDefaultsTasks()
@@ -59,6 +63,7 @@ namespace Terminal
             AddTask<ExitTask>();
             AddTask<GetCurrentDirectoryTask>();
             AddTask<ChangeDirectoryTask>();
+            AddTask<ListDirectoryTask>();
         }
 
         public void AddTask<T>()
