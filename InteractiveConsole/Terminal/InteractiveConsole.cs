@@ -1,34 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace InteractiveConsole
+namespace Terminal
 {
-    public class InputToken
-    {
-        public string Token { get; private set; }
-        public int StartIndex { get; private set; }
-        public bool IsValid => !string.IsNullOrEmpty(Token);
-        public int Length => Token.Length;
-
-        public InputToken(string token, int startIndex)
-        {
-            Token = token;
-            StartIndex = startIndex;
-        }
-    }
-
-    public class InteractiveConsole
+    internal class InteractiveConsole
     {
         private static int MAX_SUGGESTIONS = 16;
+
+        private AutoResetEvent _onAction = new AutoResetEvent(false);
+        private AutoResetEvent _waitNextAction = new AutoResetEvent(false);
 
         private string _promptName;
         private int _promptLength;
 
         private bool _exit = false;
+        private bool _forceExit = false;
+        private static ConsoleTask _currentTask;
 
+        private ConsoleKeyInfo _key;
         private string _input;
         private string _info;
         private int _cursorPosition;
@@ -40,83 +35,122 @@ namespace InteractiveConsole
         private EnumerationOptions _enumerationOptions = new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive };
         private string _currentDirectory = Directory.GetCurrentDirectory();
 
+        public event EventHandler OnExit;
+
         public InteractiveConsole(string promptName)
         {
             _promptName = promptName;
             _promptLength = _promptName.Length + 3;
         }
 
-        public void Process()
+        private void StartKeyReading()
         {
-            ConsoleKeyInfo key;
-            char lastKey = '\0';
-            DateTime lastTimeKeyPress = DateTime.MinValue;
-            bool doubleKeyPress;
-
-            _input = string.Empty;
-            _cursorPosition = 0;
-
-            WritePrompt();
-
-            do
+            var t = Task.Run(() =>
             {
-                key = Console.ReadKey(true);
-                doubleKeyPress = lastKey == key.KeyChar && (DateTime.UtcNow - lastTimeKeyPress).TotalMilliseconds < 500;
-                lastTimeKeyPress = DateTime.UtcNow;
-
-                _validate = false;
-                _print = false;
-                _printInfo = false;
-                _setCursor = false;
-
-                switch (key.Key)
+                while (!_exit && !_forceExit)
                 {
-                    case ConsoleKey.Spacebar:
-                        AddChar(key.KeyChar);
-                        break;
-                    case ConsoleKey.Tab:
-                        if (doubleKeyPress)
-                        {
-                            AutoComplete();
-                        }
-                        break;
-                    case ConsoleKey.Enter:
-                        Validate();
-                        break;
-                    case ConsoleKey.Delete:
-                        DeleteNextChar();
-                        break;
-                    case ConsoleKey.Backspace:
-                        DeletePreviousChar();
-                        break;
-                    case ConsoleKey.LeftArrow:
-                        GoPreviousChar();
-                        break;
-                    case ConsoleKey.RightArrow:
-                        GoNextChar();
-                        break;
-                    default:
-                        AddChar(key.KeyChar);
-                        break;
+                    _key = Console.ReadKey(true);
+                    _onAction.Set();
+                    _waitNextAction.WaitOne();
                 }
+            });
+        }
 
-                lastKey = key.KeyChar;
+        public void Start()
+        {
+            try
+            {
+                _exit = false;
+                _forceExit = false;
 
-                SetCursorVisible(false);
+                Console.CancelKeyPress += OnCancelKeyPress;
+                var currentProcess = Process.GetCurrentProcess();
+                currentProcess.Exited += OnExited;
+                AppDomain.CurrentDomain.ProcessExit += OnExited;
+                AppDomain.CurrentDomain.DomainUnload += OnExited;
 
-                if (_print)
+                char lastKey = '\0';
+                DateTime lastTimeKeyPress = DateTime.MinValue;
+                bool doubleKeyPress;
+
+                _input = string.Empty;
+                _cursorPosition = 0;
+
+                WritePrompt();
+
+                StartKeyReading();
+
+                while (true)
                 {
-                    WriteCurrentLine(_validate);
+                    _onAction.WaitOne();
+
+                    if (_exit || _forceExit)
+                    {
+                        break;
+                    }
+
+                    doubleKeyPress = lastKey == _key.KeyChar && (DateTime.UtcNow - lastTimeKeyPress).TotalMilliseconds < 500;
+                    lastTimeKeyPress = DateTime.UtcNow;
+
+                    _validate = false;
+                    _print = false;
+                    _printInfo = false;
+                    _setCursor = false;
+
+                    switch (_key.Key)
+                    {
+                        case ConsoleKey.Spacebar:
+                            AddChar(_key.KeyChar);
+                            break;
+                        case ConsoleKey.Tab:
+                            if (doubleKeyPress)
+                            {
+                                AutoComplete();
+                            }
+                            break;
+                        case ConsoleKey.Enter:
+                            Validate();
+                            break;
+                        case ConsoleKey.Delete:
+                            DeleteNextChar();
+                            break;
+                        case ConsoleKey.Backspace:
+                            DeletePreviousChar();
+                            break;
+                        case ConsoleKey.LeftArrow:
+                            GoPreviousChar();
+                            break;
+                        case ConsoleKey.RightArrow:
+                            GoNextChar();
+                            break;
+                        default:
+                            AddChar(_key.KeyChar);
+                            break;
+                    }
+
+                    lastKey = _key.KeyChar;
+
+                    SetCursorVisible(false);
+
+                    if (_print)
+                    {
+                        WriteCurrentLine(_validate);
+                    }
+
+                    if (_setCursor)
+                    {
+                        Console.SetCursorPosition(_cursorPosition + _promptLength, Console.CursorTop);
+                    }
+
+                    SetCursorVisible(true);
+
+                    _waitNextAction.Set();
                 }
-
-                if (_setCursor)
-                {
-                    Console.SetCursorPosition(_cursorPosition + _promptLength, Console.CursorTop);
-                }
-
-                SetCursorVisible(true);
-
-            } while (!_exit);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("> Error : {0}", ex.Message);
+            }
         }
 
         private void SetCursorVisible(bool visible)
@@ -274,6 +308,25 @@ namespace InteractiveConsole
             _setCursor = true;
         }
 
+        private bool IsAllowedPathChar(char c)
+        {
+            switch(c)
+            {
+                case '\\':
+                case '/':
+                case ':':
+                case '*':
+                case '?':
+                case '"':
+                case '<':
+                case '>':
+                case '|':
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
         private string GetPathEnd(string path)
         {
             var sb = new StringBuilder();
@@ -289,7 +342,7 @@ namespace InteractiveConsole
             }
 
             string res = sb.ToString();
-            if (res.Length > 0 && !char.IsLetterOrDigit(res[res.Length - 1]))
+            if (res.Length > 0 && !IsAllowedPathChar(res[res.Length - 1]))
             {
                 return null;
             }
@@ -395,6 +448,27 @@ namespace InteractiveConsole
                 _cursorPosition = 0;
                 _setCursor = true;
             }
+        }
+
+        private void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            _forceExit = !(_currentTask?.HandleCancel == true);
+            e.Cancel = true;
+
+            if (_forceExit)
+            {
+                _onAction.Set();
+            }
+        }
+
+        private void OnExited(object sender, EventArgs e)
+        {
+            RaiseOnExitEvent();
+        }
+
+        private void RaiseOnExitEvent()
+        {
+            OnExit?.Invoke(this, null);
         }
     }
 }
