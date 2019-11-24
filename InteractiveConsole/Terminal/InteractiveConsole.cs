@@ -521,7 +521,7 @@ namespace Terminal
             Console.Write("\r");
             WritePrompt();
             Console.Write(_input);
-            Console.Write(new string(' ', Console.BufferWidth - _promptLength - _input.Length));
+            Console.Write(new string(' ', Console.BufferWidth - _promptLength - _input.Length - 1));
 
             if (_printInfo)
             {
