@@ -525,11 +525,11 @@ namespace Terminal
             }
             catch (TerminalArgumentException ex)
             {
-                Console.WriteLine("> {0} Error : {1}", task.GetType().Name, ex.Message);
+                Console.WriteLine("> {0} error : {1}", task.Name, ex.Message);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("> {0} Error : {1}", task.GetType().Name, ex.Message);
+                Console.WriteLine("> {0} error : {1}", task.Name, ex.Message);
             }
         }
 
