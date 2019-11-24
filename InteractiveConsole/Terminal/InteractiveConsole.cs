@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Terminal.Commands;
+using Terminal.Tasks;
+using Terminal.Tasks.Defaults;
 
 namespace Terminal
 {
@@ -21,7 +24,9 @@ namespace Terminal
 
         private bool _exit = false;
         private bool _forceExit = false;
-        private static ConsoleTask _currentTask;
+
+        private Dictionary<string, ConsoleTask> _tasks;
+        private ConsoleTask _currentTask;
 
         private ConsoleKeyInfo _key;
         private string _input;
@@ -41,6 +46,37 @@ namespace Terminal
         {
             _promptName = promptName;
             _promptLength = _promptName.Length + 3;
+
+            _tasks = new Dictionary<string, ConsoleTask>();
+            AddDefaultsTasks();
+        }
+
+        private void AddDefaultsTasks()
+        {
+            AddTask<ExitTask>();
+            AddTask<GetCurrentDirectoryTask>();
+            AddTask<ChangeDirectoryTask>();
+        }
+
+        public void AddTask<T>()
+            where T : ConsoleTask, new()
+        {
+            T task = new T();
+
+            if (_tasks.ContainsKey(task.Command))
+            {
+                throw new TerminalTaskDuplicatedCommandException();
+            }
+            _tasks.Add(task.Command.ToLower(), task);
+
+            foreach(var alias in task.Aliases)
+            {
+                if (_tasks.ContainsKey(alias))
+                {
+                    throw new TerminalTaskDuplicatedCommandException();
+                }
+                _tasks.Add(alias.ToLower(), task);
+            }
         }
 
         private void StartKeyReading()
@@ -145,6 +181,11 @@ namespace Terminal
                     SetCursorVisible(true);
 
                     _waitNextAction.Set();
+
+                    if (_exit || _forceExit)
+                    {
+                        break;
+                    }
                 }
             }
             catch (Exception ex)
@@ -442,11 +483,53 @@ namespace Terminal
 
             if (validate)
             {
-                Console.WriteLine();
-                WritePrompt();
-                _input = string.Empty;
-                _cursorPosition = 0;
-                _setCursor = true;
+                var command = CommandParser.Parse(_input);
+                HandleCommand(command);
+
+                if (!_exit)
+                {
+                    Console.WriteLine();
+                    WritePrompt();
+                    _input = string.Empty;
+                    _cursorPosition = 0;
+                    _setCursor = true;
+                }
+            }
+        }
+
+        private void HandleCommand(Command cmd)
+        {
+            ConsoleTask task = null;
+
+            try
+            {
+                if (cmd.Action == null)
+                {
+                    return;
+                }
+
+                if (!_tasks.TryGetValue(cmd.Action.ToLower(), out task))
+                {
+                    Console.WriteLine("> Unknown command");
+                    return;
+                }
+
+                _currentTask = task;
+
+                task.Parse(cmd.Arguments);
+                task.Exec();
+
+                _exit = task.IsExit;
+
+                _currentTask = null;
+            }
+            catch (TerminalArgumentException ex)
+            {
+                Console.WriteLine("> {0} Error : {1}", task.GetType().Name, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("> {0} Error : {1}", task.GetType().Name, ex.Message);
             }
         }
 

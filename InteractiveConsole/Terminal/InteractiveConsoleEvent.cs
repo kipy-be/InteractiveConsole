@@ -1,4 +1,5 @@
 ﻿using System;
+using Terminal.Commands;
 
 namespace Terminal
 {
