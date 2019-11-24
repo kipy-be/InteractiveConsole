@@ -272,7 +272,8 @@ namespace Terminal
                 return;
             }
 
-            _input = _history[--_historyIndex];
+            _historyIndex = Math.Min(--_historyIndex, _history.Count - 1);
+            _input = _history[_historyIndex];
             _cursorPosition = _input.Length;
             _print = true;
             _setCursor = true;
@@ -280,8 +281,13 @@ namespace Terminal
 
         private void GoNextHistory()
         {
-            if (_historyIndex + 1 >= _history.Count)
+            if (_historyIndex >= _history.Count - 1)
             {
+                _input = "";
+                _cursorPosition = 0;
+                _print = true;
+                _setCursor = true;
+                _historyIndex++;
                 return;
             }
 
