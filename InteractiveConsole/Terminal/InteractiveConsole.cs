@@ -379,7 +379,7 @@ namespace Terminal
                     break;
                 }
 
-                sb.Insert(0, _input[i]);
+                sb.Insert(0, path[i]);
             }
 
             string res = sb.ToString();
