@@ -37,6 +37,9 @@ namespace Terminal
         private bool _validate;
         private bool _setCursor;
 
+        private List<string> _history = new List<string>();
+        private int _historyIndex = 0;
+
         private EnumerationOptions _enumerationOptions = new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive };
         private string _currentDirectory = Directory.GetCurrentDirectory();
 
@@ -159,6 +162,12 @@ namespace Terminal
                         case ConsoleKey.RightArrow:
                             GoNextChar();
                             break;
+                        case ConsoleKey.UpArrow:
+                            GoPreviousHistory();
+                            break;
+                        case ConsoleKey.DownArrow:
+                            GoNextHistory();
+                            break;
                         default:
                             AddChar(_key.KeyChar);
                             break;
@@ -253,6 +262,32 @@ namespace Terminal
             }
 
             ++_cursorPosition;
+            _setCursor = true;
+        }
+
+        private void GoPreviousHistory()
+        {
+            if(_historyIndex == 0)
+            {
+                return;
+            }
+
+            _input = _history[--_historyIndex];
+            _cursorPosition = _input.Length;
+            _print = true;
+            _setCursor = true;
+        }
+
+        private void GoNextHistory()
+        {
+            if (_historyIndex + 1 >= _history.Count)
+            {
+                return;
+            }
+
+            _input = _history[++_historyIndex];
+            _cursorPosition = _input.Length;
+            _print = true;
             _setCursor = true;
         }
 
@@ -444,6 +479,12 @@ namespace Terminal
             _setCursor = true;
         }
 
+        private void AddToHistory(string line)
+        {
+            _history.Add(line);
+            _historyIndex = _history.Count;
+        }
+
         private void Validate()
         {
             _print = true;
@@ -478,6 +519,7 @@ namespace Terminal
 
             if (validate)
             {
+                AddToHistory(_input);
                 var command = CommandParser.Parse(_input);
                 HandleCommand(command);
 
