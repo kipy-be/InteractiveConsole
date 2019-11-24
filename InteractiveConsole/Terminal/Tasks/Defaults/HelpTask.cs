@@ -19,6 +19,12 @@ namespace Terminal.Tasks.Defaults
             SetName("Show help");
             SetCommand("help");
             SetDescription("show help for the given command, list the available commands otherwise");
+            AddArgumentDescription
+            (
+                "COMMAND",
+                "specify the command you want help for",
+                "if not specified or the command does not exist, the help will show all the available commands"
+            );
         }
 
         private void ShowCommandsList()

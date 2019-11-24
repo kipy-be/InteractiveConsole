@@ -36,7 +36,7 @@ namespace Terminal.Tasks
             Description = description;
         }
 
-        protected void SetArgumentDescription(string argument, params string[] description)
+        protected void AddArgumentDescription(string argument, params string[] description)
         {
             ArgumentsDescriptions.Add(new ConsoleTaskArgumentDescription(argument, description));
         }
