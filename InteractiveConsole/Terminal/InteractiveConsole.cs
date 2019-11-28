@@ -539,6 +539,7 @@ namespace Terminal
             if (validate)
             {
                 AddToHistory(_input);
+                Console.WriteLine();
                 var command = CommandParser.Parse(_input);
                 HandleCommand(command);
 
