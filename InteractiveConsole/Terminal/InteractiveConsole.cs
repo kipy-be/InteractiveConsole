@@ -332,12 +332,15 @@ namespace Terminal
 
         private string[] GetPathSuggestions(string dir, string token)
         {
-            int i = 0;
             var suggestions = new List<string>();
 
-            foreach(string file in Directory.EnumerateFileSystemEntries(dir, $"{token}*", _enumerationOptions))
+            if (Directory.Exists(dir))
             {
-                suggestions.Add(Path.GetFileName(file));
+                int i = 0;
+                foreach (string file in Directory.EnumerateFileSystemEntries(dir, $"{token}*", _enumerationOptions))
+                {
+                    suggestions.Add(Path.GetFileName(file));
+                }
             }
 
             return suggestions.ToArray();
