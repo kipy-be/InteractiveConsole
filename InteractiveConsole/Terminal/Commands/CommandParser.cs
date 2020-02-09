@@ -102,15 +102,17 @@ namespace Terminal.Commands
             {
                 _isAction = true;
                 _isActionSet = true;
-            }   
+            }
         }
 
         private void HandleChar(char c)
         {
-            if(_isBackSlashSet)
+            if (_isBackSlashSet)
             {
-                if(c != '"')
+                if (c != '"' && c != ' ')
+                {
                     _token += "\\";
+                }
                 _isBackSlashSet = false;
             }
 
@@ -147,7 +149,14 @@ namespace Terminal.Commands
         {
             if (!_isEnclosed)
             {
-                HandleToken();
+                if (_isBackSlashSet)
+                {
+                    HandleChar(c);
+                }
+                else
+                {
+                    HandleToken();
+                }
             }
             else
             {

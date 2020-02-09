@@ -245,7 +245,7 @@ namespace Terminal
 
         private void DeletePreviousChar()
         {
-            if(_cursorPosition == 0)
+            if (_cursorPosition == 0)
             {
                 return;
             }
@@ -279,7 +279,7 @@ namespace Terminal
 
         private void GoPreviousHistory()
         {
-            if(_historyIndex == 0)
+            if (_historyIndex == 0)
             {
                 return;
             }
@@ -319,7 +319,7 @@ namespace Terminal
             int i = _cursorPosition - 1;
             for (; i >= 0; i--)
             {
-                if(_input[i] == ' ')
+                if (_input[i] == ' ')
                 {
                     break;
                 }
@@ -364,7 +364,7 @@ namespace Terminal
 
                 for (i = 1; i < suggestions.Length; i++)
                 {
-                    if(u >= suggestions[i].Length || c != suggestions[i][u])
+                    if (u >= suggestions[i].Length || c != suggestions[i][u])
                     {
                         return res;
                     }
@@ -387,7 +387,7 @@ namespace Terminal
             {
                 index += token.Token.Length;
             }
-            
+
             int count = token.StartIndex + token.Length - index;
 
             _input = _input.Remove(index, count);
@@ -402,7 +402,7 @@ namespace Terminal
 
         private bool IsAllowedPathChar(char c)
         {
-            switch(c)
+            switch (c)
             {
                 case '\\':
                 case '/':
@@ -446,7 +446,7 @@ namespace Terminal
         {
             var inputToken = GetCurrentToken();
 
-            if(inputToken == null || !inputToken.IsValid)
+            if (inputToken == null || !inputToken.IsValid)
             {
                 return;
             }
@@ -474,7 +474,7 @@ namespace Terminal
 
             if (suggestions.Length == 1)
             {
-                ReplaceToken(inputToken, pathEnd, suggestions[0]);
+                ReplaceToken(inputToken, pathEnd, suggestions[0].Replace(" ", "\\ "));
                 return;
             }
 
@@ -494,7 +494,7 @@ namespace Terminal
                 _info = $"{string.Join("  ", suggestions)}";
             }
 
-            
+
             _print = true;
             _printInfo = true;
             _setCursor = true;
