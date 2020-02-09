@@ -380,6 +380,9 @@ namespace Terminal
 
         private void ReplaceToken(InputToken token, string oldValue, string newValue)
         {
+            oldValue = oldValue.Replace(" ", "\\ ");
+            newValue = newValue.Replace(" ", "\\ ");
+
             int index = token.StartIndex;
 
             if (!string.IsNullOrEmpty(oldValue))
@@ -478,14 +481,14 @@ namespace Terminal
 
             if (suggestions.Length == 1)
             {
-                ReplaceToken(inputToken, pathEnd, suggestions[0].Replace(" ", "\\ "));
+                ReplaceToken(inputToken, pathEnd, suggestions[0]);
                 return;
             }
 
             string common = GetCommonFromSuggestions(suggestions);
             if (!string.IsNullOrEmpty(common) && common != pathEnd)
             {
-                ReplaceToken(inputToken, pathEnd, common.Replace(" ", "\\ "));
+                ReplaceToken(inputToken, pathEnd, common);
                 return;
             }
 
