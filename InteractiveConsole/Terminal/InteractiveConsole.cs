@@ -321,7 +321,10 @@ namespace Terminal
             {
                 if (_input[i] == ' ')
                 {
-                    break;
+                    if (i > 0 && _input[i - 1] != '\\')
+                    {
+                        break;
+                    }
                 }
 
                 sb.Insert(0, _input[i]);
@@ -451,15 +454,16 @@ namespace Terminal
                 return;
             }
 
-            string dir = new FileInfo(inputToken.Token).DirectoryName;
+            string strippedToken = inputToken.Token.Replace("\\ ", " ");
+            string dir = new FileInfo(strippedToken).DirectoryName;
 
             if (dir == null)
             {
-                dir = new DirectoryInfo(inputToken.Token).FullName;
+                dir = new DirectoryInfo(strippedToken).FullName;
             }
 
             dir = Path.Combine(_currentDirectory, dir);
-            string pathEnd = GetPathEnd(inputToken.Token);
+            string pathEnd = GetPathEnd(strippedToken);
 
             if (pathEnd == null)
             {
@@ -481,7 +485,7 @@ namespace Terminal
             string common = GetCommonFromSuggestions(suggestions);
             if (!string.IsNullOrEmpty(common) && common != pathEnd)
             {
-                ReplaceToken(inputToken, pathEnd, common);
+                ReplaceToken(inputToken, pathEnd, common.Replace(" ", "\\ "));
                 return;
             }
 
