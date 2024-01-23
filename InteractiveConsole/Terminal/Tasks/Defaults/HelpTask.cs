@@ -42,6 +42,8 @@ namespace Terminal.Tasks.Defaults
 
         public override void Parse(string[] args)
         {
+			_command = null;
+			
             if (args.Length > 0)
             {
                 _command = args[0].ToLower();
